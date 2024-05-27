@@ -11,44 +11,58 @@ body {
 .container {
     text-align: center;
     background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-    margin-bottom: 20px;
+    margin-bottom: 1.5rem;
+    color: #333;
 }
 
-.social-icons {
+.socials {
     display: flex;
-    justify-content: center;
-    gap: 20px;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.social-icon {
-    color: #fff;
-    font-size: 24px;
+.social {
     text-decoration: none;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    padding: 1rem;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 1.2rem;
     transition: background 0.3s;
 }
 
-.social-icon i {
-    line-height: 50px;
-}
+.social.facebook { background: #3b5998; }
+.social.facebook:hover { background: #2d4373; }
 
-.social-icon:hover {
-    transform: scale(1.1);
-}
+.social.youtube { background: #FF0000; }
+.social.youtube:hover { background: #cc0000; }
 
-.social-icon:nth-child(1) { background: #3b5998; }
-.social-icon:nth-child(2) { background: #1da1f2; }
-.social-icon:nth-child(3) { background: #e4405f; }
-.social-icon:nth-child(4) { background: #0077b5; }
-.social-icon:nth-child(5) { background: #333; }
+.social.instagram { background: #E1306C; }
+.social.instagram:hover { background: #c71562; }
+
+.social.discord { background: #7289DA; }
+.social.discord:hover { background: #5b6eae; }
+
+.social.tiktok { background: #010101; }
+.social.tiktok:hover { background: #333333; }
+
+.social.twitch { background: #9146FF; }
+.social.twitch:hover { background: #772ce8; }
+
+.social.kick { background: #52C41A; }
+.social.kick:hover { background: #3e9d15; }
+
+.social.patreon { background: #F96854; }
+.social.patreon:hover { background: #e85643; }
+
+.social.twitter { background: #1DA1F2; }
+.social.twitter:hover { background: #0d95e8; }
+
+
+.social.reddit { background: #FF4500; }
+.social.reddit:hover { background: #e03e00; }
