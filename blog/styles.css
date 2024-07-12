@@ -30,10 +30,8 @@ main {
     padding: 1rem;
 }
 
-article {
-    border-bottom: 1px solid #ccc;
+section {
     margin-bottom: 1rem;
-    padding-bottom: 1rem;
 }
 
 footer {
@@ -44,4 +42,33 @@ footer {
     position: fixed;
     bottom: 0;
     width: 100%;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+form label, form input, form textarea {
+    margin-bottom: 0.5rem;
+}
+
+form input, form textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+form button {
+    padding: 0.5rem;
+    border: none;
+    border-radius: 4px;
+    background-color: #333;
+    color: white;
+    cursor: pointer;
+}
+
+form button:hover {
+    background-color: #555;
 }
