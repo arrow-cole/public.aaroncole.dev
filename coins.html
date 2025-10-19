@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mobile Coin Counter</title>
+<style>
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: #0e141b;
+    color: #fff;
+    text-align: center;
+  }
+  header {
+    padding: 1rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: #121b24;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  }
+  #video {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+  #overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .controls {
+    margin: 1rem 0;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  button {
+    background: #10b981;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.8rem 1.2rem;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  button:disabled {
+    background: #555;
+    cursor: not-allowed;
+  }
+  #output {
+    margin-top: 1rem;
+    background: #1b2836;
+    padding: 1rem;
+    border-radius: 10px;
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 1rem;
+  }
+  .total {
+    color: #10b981;
+    font-weight: bold;
+    font-size: 1.4rem;
+    margin-top: 0.6rem;
+  }
+  .hint {
+    color: #9ca3af;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+  <header>📱 Mobile Coin Counter</header>
+
+  <div style="position:relative;">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="overlay"></canvas>
+  </div>
+
+  <div class="controls">
+    <button id="startBtn">Start Camera</button>
+    <button id="scanBtn" disabled>Scan Coins</button>
+  </div>
+
+  <div id="output">
+    <div id="status">Waiting for camera...</div>
+    <div id="breakdown"></div>
+    <div class="total" id="total"></div>
+  </div>
+
+  <div class="hint">Tip: Lay coins flat, good lighting, and space them apart.<br/>The app assumes the largest coin is a quarter.</div>
+
+<script>
+// Simplified mobile coin counter
+let video = document.getElementById('video');
+let canvas = document.getElementById('overlay');
+let ctx = canvas.getContext('2d');
+let startBtn = document.getElementById('startBtn');
+let scanBtn = document.getElementById('scanBtn');
+let statusDiv = document.getElementById('status');
+let breakdownDiv = document.getElementById('breakdown');
+let totalDiv = document.getElementById('total');
+let stream = null;
+
+const coinDiamMm = { dime:17.91, penny:19.05, nickel:21.21, quarter:24.26, half:30.61 };
+const coinValues = { dime:0.10, penny:0.01, nickel:0.05, quarter:0.25, half:0.50 };
+
+startBtn.onclick = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    video.srcObject = stream;
+    await video.play();
+    scanBtn.disabled = false;
+    startBtn.disabled = true;
+    statusDiv.innerText = "Camera ready — press Scan Coins";
+  } catch (err) {
+    statusDiv.innerText = "Camera access failed. Use HTTPS or allow camera permissions.";
+    console.error(err);
+  }
+};
+
+// Load OpenCV.js
+let script = document.createElement('script');
+script.src = "https://docs.opencv.org/4.x/opencv.js";
+script.onload = () => {
+  cv['onRuntimeInitialized'] = () => {
+    statusDiv.innerText = "OpenCV loaded — start your camera!";
+  };
+};
+document.head.appendChild(script);
+
+scanBtn.onclick = async () => {
+  if (!stream) return;
+  try {
+    let w = video.videoWidth, h = video.videoHeight;
+    canvas.width = w; canvas.height = h;
+
+    let src = new cv.Mat(h, w, cv.CV_8UC4);
+    let cap = new cv.VideoCapture(video);
+    cap.read(src);
+    let gray = new cv.Mat();
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(gray, gray, new cv.Size(7,7), 1.5, 1.5);
+
+    let circles = new cv.Mat();
+    cv.HoughCircles(gray, circles, cv.HOUGH_GRADIENT, 1.2, h/10, 100, 30, 10, h/3);
+
+    ctx.clearRect(0,0,w,h);
+    ctx.drawImage(video,0,0,w,h);
+
+    let counts = {dime:0,penny:0,nickel:0,quarter:0,half:0};
+    let mmPerPixel = null;
+
+    if (circles.rows > 0) {
+      let detected = [];
+      for (let i=0;i<circles.cols;i++) {
+        let x = circles.data32F[i*3];
+        let y = circles.data32F[i*3+1];
+        let r = circles.data32F[i*3+2];
+        detected.push({x,y,r});
+      }
+
+      detected.sort((a,b)=>b.r-a.r);
+      let largest = detected[0];
+      mmPerPixel = coinDiamMm.quarter / (2*largest.r);
+
+      detected.forEach(c=>{
+        let diamMm = 2*c.r*mmPerPixel;
+        let best=null, bestDiff=999;
+        for(const k in coinDiamMm){
+          let diff=Math.abs(coinDiamMm[k]-diamMm);
+          if(diff<bestDiff){bestDiff=diff;best=k;}
+        }
+        if(bestDiff/coinDiamMm[best]<0.25) counts[best]++;
+        ctx.beginPath();
+        ctx.strokeStyle="rgba(16,185,129,0.8)";
+        ctx.lineWidth=2;
+        ctx.arc(c.x,c.y,c.r,0,2*Math.PI);
+        ctx.stroke();
+      });
+    }
+
+    src.delete(); gray.delete(); circles.delete();
+
+    let total=0, breakdown="";
+    for(const k in counts){
+      let val = counts[k]*coinValues[k];
+      if(counts[k]>0){
+        breakdown += `${counts[k]} ${k}${counts[k]>1?'s':''}, `;
+        total+=val;
+      }
+    }
+
+    if(total>0){
+      statusDiv.innerText = "Detected coins:";
+      breakdownDiv.innerText = breakdown.slice(0,-2);
+      totalDiv.innerText = "$" + total.toFixed(2);
+    } else {
+      statusDiv.innerText = "No coins detected. Try again.";
+      breakdownDiv.innerText = "";
+      totalDiv.innerText = "";
+    }
+  } catch(e){
+    console.error(e);
+    statusDiv.innerText = "Error during scan.";
+  }
+};
+</script>
+</body>
+</html>
